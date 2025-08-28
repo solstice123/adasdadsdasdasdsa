@@ -1,0 +1,37 @@
+{
+  "flower": {
+    "name": {"en": "Flower", "ru": "Цветок", "uk": "Квітка"},
+    "grow_time": 20,
+    "price": 5
+  },
+  "carrot-seeding": {
+    "name": {"en": "Carrot seeding", "ru": "Морковью посевной", "uk": "Морквою посівної"},
+    "grow_time": 50,
+    "price": 15
+  },
+  "apple": {
+    "name": {"en": "Apple", "ru": "Яблоня", "uk": "Яблуня"},
+    "grow_time": 100,
+    "price": 30
+  },
+  "dog-rose": {
+    "name": {"en": "Dog-rose", "ru": "Шиповник", "uk": "Шипшина"},
+    "grow_time": 180,
+    "price": 50
+  },
+  "orchid": {
+    "name": {"en": "Orchid", "ru": "Орхидея", "uk": "Орхідея"},
+    "grow_time": 300,
+    "price": 100
+  },
+  "rose": {
+    "name": {"en": "Rose", "ru": "Роза", "uk": "Троянда"},
+    "grow_time": 450,
+    "price": 150
+  },
+  "garden-strawberry": {
+    "name": {"en": "Garden strawberry", "ru": "Клубника садовая", "uk": "Полуниця садова"},
+    "grow_time": 600,
+    "price": 200
+  }
+}
