@@ -15,16 +15,15 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 # Конфигурация для Render
 PORT = int(os.environ.get("PORT", 10000))
 WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://adasdadsdasdasdsa.onrender.com/")
-API_TOKEN = os.environ.get("8358618571:AAHmQGl3Vl7KA612YyfJ5MKjotGXQ8-ycEA")
-DONATE_LINK = "https://www.donationalerts.com/r/dungeonadventures"
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://your-bot-name.onrender.com")
 
-# Проверка обязательных переменных окружения
+# Получение токена из переменных окружения
+API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 if not API_TOKEN:
-    raise ValueError("Не задан TELEGRAM_BOT_TOKEN в переменных окружения")
+    raise ValueError("❌ TELEGRAM_BOT_TOKEN не найден в переменных окружения. "
+                   "Добавьте его в настройках Render: Settings -> Environment Variables")
 
-if not WEBHOOK_URL:
-    raise ValueError("Не задан WEBHOOK_URL в переменных окружения")
+DONATE_LINK = "https://www.donationalerts.com/r/your_donation_link"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -215,6 +214,7 @@ def main_menu_keyboard(lang):
     builder = ReplyKeyboardBuilder()
     builder.add(
         types.KeyboardButton(text="/shop"),
+        types.KeyboardButton(text="/buy"),
     )
     builder.add(
         types.KeyboardButton(text="/plant"),
@@ -287,6 +287,24 @@ async def shop_handler(message: types.Message):
         "uk": "🌱Оберіть насіння для купівлі:",
         "ru": "🌱Выберите семена для покупки:",
         "en": "🌱Choose seeds to buy:"
+    }[lang], reply_markup=builder.as_markup())
+
+@dp.message(Command("buy"))
+async def buy_handler(message: types.Message):
+    lang = get_user_language(message.from_user.id)
+    plants = load_plants()
+    builder = InlineKeyboardBuilder()
+    
+    for key, plant in plants.items():
+        name = get_plant_name(plant, lang)
+        builder.button(text=f"{emoji_dict['buy']} {name}", callback_data=f"buy_{key}")
+    
+    builder.adjust(3, 2)
+    
+    await message.answer({
+        "uk": "Оберіть насіння для купівлі:",
+        "ru": "Выберите семена для покупки:",
+        "en": "Choose seeds to buy:"
     }[lang], reply_markup=builder.as_markup())
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("buy_"))
@@ -640,6 +658,7 @@ def main():
     app.on_shutdown.append(lambda app: on_shutdown(bot))
     
     # Запуск веб-сервера
+    logger.info(f"Starting server on port {PORT}")
     web.run_app(app, host='0.0.0.0', port=PORT)
 
 if __name__ == "__main__":
