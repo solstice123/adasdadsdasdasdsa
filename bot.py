@@ -13,11 +13,18 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 # Конфигурация для Render
-PORT = int(os.environ.get("PORT", 10000))  # Render использует порт 10000 по умолчанию
+PORT = int(os.environ.get("PORT", 10000))
 WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = os.environ.get("https://adasdadsdasdasdsa.onrender.com")  # Замените на ваш URL
-API_TOKEN = os.environ.get("8358618571:AAHmQGl3Vl7KA612YyfJ5MKjotGXQ8-ycEA")  # Ваш токен
-DONATE_LINK = "https://www.donationalerts.com/r/dungeonadventures"  # Замените на вашу ссылку для донатов
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://adasdadsdasdasdsa.onrender.com/")
+API_TOKEN = os.environ.get("8358618571:AAHmQGl3Vl7KA612YyfJ5MKjotGXQ8-ycEA")
+DONATE_LINK = "https://www.donationalerts.com/r/dungeonadventures"
+
+# Проверка обязательных переменных окружения
+if not API_TOKEN:
+    raise ValueError("Не задан TELEGRAM_BOT_TOKEN в переменных окружения")
+
+if not WEBHOOK_URL:
+    raise ValueError("Не задан WEBHOOK_URL в переменных окружения")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -208,7 +215,6 @@ def main_menu_keyboard(lang):
     builder = ReplyKeyboardBuilder()
     builder.add(
         types.KeyboardButton(text="/shop"),
-        types.KeyboardButton(text="/buy"),
     )
     builder.add(
         types.KeyboardButton(text="/plant"),
@@ -224,26 +230,6 @@ def main_menu_keyboard(lang):
     )
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True, one_time_keyboard=False)
-
-
-class ErrorHandler(ErrorsMiddleware):
-    def __init__(self, dispatcher: Dispatcher):
-        super().__init__(dispatcher)
-
-    async def __call__(self, handler, event, data):
-        try:
-            return await handler(event, data)
-        except Exception as e:
-            logger.error(f"Error in handler: {e}", exc_info=True)
-            if hasattr(event, "message") and event.message:
-                await event.message.answer(f"{emoji_dict['error']} Щось пішло не так, спробуйте пізніше.")
-            elif hasattr(event, "callback_query") and event.callback_query:
-                await event.callback_query.message.answer(f"{emoji_dict['error']} Щось пішло не так, спробуйте пізніше.")
-            return None
-
-dp.message.middleware(ErrorHandler(dp))
-dp.callback_query.middleware(ErrorHandler(dp))
-
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
@@ -262,7 +248,6 @@ async def start_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
     await message.answer(translations["welcome"][lang], reply_markup=main_menu_keyboard(lang))
 
-
 @dp.callback_query(lambda c: c.data and c.data.startswith("setlang_"))
 async def set_language_callback(callback: types.CallbackQuery):
     lang = callback.data[8:]
@@ -276,7 +261,6 @@ async def set_language_callback(callback: types.CallbackQuery):
     await callback.message.answer(translations["language_set"][lang])
     await callback.message.answer(translations["welcome"][lang], reply_markup=main_menu_keyboard(lang))
     await callback.answer()
-
 
 @dp.message(Command("shop"))
 async def shop_handler(message: types.Message):
@@ -332,7 +316,6 @@ async def buy_seed_callback(callback: types.CallbackQuery):
     ))
     await callback.answer()
 
-
 @dp.message(Command("plant"))
 async def plant_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
@@ -365,7 +348,6 @@ async def plant_handler(message: types.Message):
         "ru": "🌻Выберите семена для посадки:",
         "en": "🌻Select seeds to plant:"
     }[lang], reply_markup=builder.as_markup())
-
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("plant_"))
 async def plant_seed_callback(callback: types.CallbackQuery):
@@ -423,7 +405,6 @@ async def plant_seed_callback(callback: types.CallbackQuery):
         left=user.get('seeds', {}).get(seed_key, 0)
     ))
 
-
 @dp.message(Command("harvest"))
 async def harvest_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
@@ -447,7 +428,6 @@ async def harvest_handler(message: types.Message):
         "ru": "🌾Выберите растение для сбора урожая:",
         "en": "🌾Select plant to harvest:"
     }[lang], reply_markup=builder.as_markup())
-
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("harvest_"))
 async def harvest_crop_callback(callback: types.CallbackQuery):
@@ -521,7 +501,6 @@ async def harvest_crop_callback(callback: types.CallbackQuery):
         ) + multiplier_part
     )
     await callback.answer()
-
 
 @dp.message(Command("status"))
 async def status_handler(message: types.Message):
@@ -603,12 +582,10 @@ async def status_handler(message: types.Message):
 
     await message.answer(response)
 
-
 @dp.message(Command("help"))
 async def help_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
     await message.answer(f"{emoji_dict['help']} {translations['help_text'][lang]}")
-
 
 @dp.message(Command("top"))
 async def top_handler(message: types.Message):
@@ -626,28 +603,23 @@ async def top_handler(message: types.Message):
         lines.append(translations["top_player_line"][lang].format(mention=mention, money=money))
     await message.answer("\n".join(lines), parse_mode="Markdown")
 
-
 @dp.message(Command("donate"))
 async def donate_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
     await message.answer(translations["donate_text"][lang])
-
 
 @dp.message()
 async def fallback_handler(message: types.Message):
     lang = get_user_language(message.from_user.id)
     await message.answer(f"{emoji_dict['error']} {translations['unknown_command'][lang]}")
 
-
 async def on_startup(bot: Bot):
     await bot.set_webhook(f"{WEBHOOK_URL}{WEBHOOK_PATH}")
     logger.info("Bot started successfully!")
 
-
 async def on_shutdown(bot: Bot):
     await bot.delete_webhook()
     logger.info("Bot stopped!")
-
 
 def main():
     # Настройка aiohttp приложения
@@ -669,7 +641,6 @@ def main():
     
     # Запуск веб-сервера
     web.run_app(app, host='0.0.0.0', port=PORT)
-
 
 if __name__ == "__main__":
     main()
